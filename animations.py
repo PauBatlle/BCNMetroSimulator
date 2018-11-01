@@ -26,7 +26,6 @@ def anima(full_data_nodes, full_data_trains, nametoid):
     G = get_barcelona()
 
     pos = {i: G.node[i]['pos'] for i in range(len(G))}
-    linia = 1
 
     def update(num):
         ax.clear()
@@ -55,7 +54,7 @@ def anima(full_data_nodes, full_data_trains, nametoid):
         plt.axis('equal')
         plt.title(str(num) + " segons")
         """
-        plt.title(str(num))
+        #plt.title(str(num))
 
     fig, ax = plt.subplots(figsize=(40,20))
 
@@ -69,13 +68,12 @@ def anima(full_data_nodes, full_data_trains, nametoid):
         for i in nametoid.keys():
             idd = list(nametoid[i].values())[0]
             gj = G.node[idd]
-            plt.text(gj['pos'][0]+10, gj['pos'][1]+10, gj['name'][:8]+("" if len(gj['name']) <= 8 else "."), fontsize = 5, rotation = 10)
+            plt.text(gj['pos'][0]+10, gj['pos'][1]+10, gj['name'][:8]+("" if len(gj['name']) <= 8 else "."), fontsize = 6, rotation = 10)
 
     dibuixa_xarxa()
     nx.draw_networkx_nodes(G,pos,node_color=cm_vv(0),node_size=50)
-    #embed()
     anim = matplotlib.animation.FuncAnimation(fig, update, frames=Niter, interval = 1)
     #Writer = matplotlib.animation.writers['ffmpeg']
-    #writer = Writer(fps=60, metadata=dict(artist='Me'), bitrate=1800)
-    #anim.save('Resultat1.mp4', writer = writer)
+    #writer = Writer(fps=25, metadata=dict(artist='Me'), bitrate=1800)
+    #anim.save('Llarg_final.mp4', writer = writer)
     plt.show()

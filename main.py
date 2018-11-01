@@ -9,7 +9,7 @@ import itertools
 import random
 from IPython import embed
 from animations import anima
-
+from ipdb import launch_ipdb_on_exception as l
 
 timestep = 5 #Està en segons
 capacitat_tren = 500
@@ -53,6 +53,10 @@ class tren():
     #avansa el tren i arriba a la nova parada, true
     def avansa(self):
         self.tick -= 1
+        if Paco in self.people:
+            Paco.fraccio = 1-self.tick/self.maxtick
+            if Paco.fraccio == 1:
+                Paco.fraccio = 0
         if self.tick <= 0: 
             return True
         return False
@@ -101,6 +105,7 @@ class person():
         self.id = id
         self.pos = inici
         self.trajecte = nx.shortest_path(G, inici, destinacio)[1:]
+        self.fraccio = 0
 
     #actualitza la seva posicio (per transbords o quan el tren arriba a nova parada)       
     def mou(self):
@@ -117,7 +122,9 @@ class person():
         pers.mou()
         pos = pers.pos
         linia = lineidtoline[idtoname[pos][1]]
-        sig = linia.nodesid.index(pers.trajecte[0]) - linia.nodesid.index(pos)
+        #if (pers.trajecte)
+        with l():
+            sig = linia.nodesid.index(pers.trajecte[0]) - linia.nodesid.index(pos)
         if sig > 0: 
             G.node[pos]['people'][0].append(pers)
         else: 
@@ -244,7 +251,7 @@ N_nodes = len(G)
 
 #genera trens en ambdues direccions a cada crida (mirar condicions etc...)
 def genera_trens(time, trains, cont_train, extral4, G):
-    print(time)
+    print(time, end = '\r')
     segons_entre_trens_l1 = 3*60+20
     segons_entre_trens_l2 = 3*60+15
     segons_entre_trens_l3 = 3*60+21
@@ -330,10 +337,6 @@ def genera_persones(time, cont_pers, G):
             cont_pers += 1
     return cont_pers
 
-def genera_paco(time, G):
-    if time != 1: return
-    Paco = person('Paco', 0, 90, G)
-    G.node[Paco.pos]['people'][0].append(Paco)
 #############################################################################
 
 importancia = np.ones(len(G.nodes()))
@@ -462,20 +465,42 @@ trains = []
 cont_train = 0
 cont_pers = 0
 N_steps = 1000
+paco = True
 full_data_trains = []
 full_data_nodes = []
+trigger = 1
+ini = 0 #On surt paco
+desti = 23 #On va paco
+esta_paco = False
+
 for time in range (1, N_steps):
     to_delete = []
     #def calcula_persones(lamb, timestep, pesos, fonts, pous):
     fonts = []
-    if time > N_steps/4:
-        fonts = [(80,10),(81,10),(79,10)]
+    """
+    if time > N_steps/4 and time < N_steps/3:
+        fonts = [(80,50),(81,50),(79,50)]
+    """
+    ###############
+    if not paco:
+        Paco = person('Paco', ini, desti, G)
+    if time == trigger and paco:
+        Paco = person('Paco', ini, desti, G)
+        G.node[Paco.pos]['people'][0].append(Paco)
+        esta_paco = True
+        Paco_position = [G.node[Paco.pos]['pos'], G.node[Paco.trajecte[0]]['pos'], 1, 1]
+
+
+    #################
+
     pois = calcula_persones(20,timestep,pesos,fonts,[])
     cont_pers = genera_persones_poisson(cont_pers,pois, G)
     #cont_pers = genera_persones(time, cont_pers, G)
     extral4 = 0
-    if time > N_steps/2:
-        extral4 = 2
+    """
+    if time > N_steps/3 and time < N_steps/2:
+        extral4 = 3*60
+    """
     cont_train = genera_trens(time, trains, cont_train,extral4 ,G)
     """ El que ve aquí sota no es toca """
     for n, train in enumerate(trains):
@@ -495,6 +520,9 @@ for time in range (1, N_steps):
     trains_to_plot = []
     for train in trains:
         trains_to_plot.append([G.node[train.ant]['pos'], G.node[train.prox]['pos'], train.nb_persones()/capacitat_tren, 1 - train.tick/train.maxtick])
+    if paco and len(Paco.trajecte) >= 1:
+        #print(G.node[Paco.pos]['pos'])
+        trains_to_plot.append([G.node[Paco.pos]['pos'], G.node[Paco.trajecte[0]]['pos'], -1, Paco.fraccio])
     full_data_trains.append(trains_to_plot)
     #transbord
 
@@ -517,4 +545,3 @@ for time in range (1, N_steps):
 #embed()
 anima(full_data_nodes, full_data_trains, nametoid)    
 ########
-
